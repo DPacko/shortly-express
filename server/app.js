@@ -4,6 +4,7 @@ const utils = require("./lib/hashUtils");
 const partials = require("express-partials");
 const bodyParser = require("body-parser");
 const Auth = require("./middleware/auth");
+const parseCookies = require("./middleware/cookieParser");
 const models = require("./models");
 
 const app = express();
@@ -13,6 +14,7 @@ app.set("view engine", "ejs");
 app.use(partials());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(parseCookies);
 app.use(express.static(path.join(__dirname, "../public")));
 
 app.get("/", (req, res) => {
@@ -81,7 +83,7 @@ app.post("/signup", (req, res) => {
     .then(result => {
       if (result) {
         res.status(409).redirect("/signup");
-        throw new Error("users already exists");
+        // throw new Error("users already exists");
       }
       return models.Users.create({ username, password });
     })
@@ -104,15 +106,21 @@ app.post("/login", (req, res) => {
   // body.password or user.password
   return models.Users.get({ username: bodyUsername })
     .then(result => {
+      if (!result) {
+        res.status(404).redirect("/login");
+        // throw new Error("users does not exists");
+        console.log("users does not exists");
+        return;
+      }
       return result;
     })
     .then(user => {
-      let userPassword = user.password;
-      let salt = user.salt;
-      // let { password, salt } = user;
-      // console.log("a", password, "p", password);
+      let userPassword = user.password || "";
+      let salt = user.salt || "";
       if (!user) {
-        throw new Error("users does not exists");
+        // throw new Error("users does not exists");
+        console.log("users does not exists");
+        return;
       }
       return models.Users.compare(bodyPassword, userPassword, salt);
     })
@@ -120,6 +128,7 @@ app.post("/login", (req, res) => {
       if (success) {
         res.status(201).redirect("/");
       }
+      res.status(404).redirect("/login");
     })
     .catch(err => {
       console.log(err);

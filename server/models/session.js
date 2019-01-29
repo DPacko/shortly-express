@@ -1,6 +1,6 @@
-const utils = require('../lib/hashUtils');
-const Model = require('./model');
-const Users = require('./user');
+const utils = require("../lib/hashUtils");
+const Model = require("./model");
+const Users = require("./user");
 
 /**
  * Sessions is a class with methods to interact with the sessions table, which
@@ -10,7 +10,7 @@ const Users = require('./user');
  */
 class Sessions extends Model {
   constructor() {
-    super('sessions');
+    super("sessions");
   }
 
   /**
@@ -33,16 +33,15 @@ class Sessions extends Model {
    * match the options, the promise will only be fulfilled with one.
    */
   get(options) {
-    return super.get.call(this, options)
-      .then(session => {
-        if (!session || !session.userId) {
-          return session;
-        }
-        return Users.get({ id: session.userId }).then(user => {
-          session.user = user;
-          return session;
-        });
+    return super.get.call(this, options).then(session => {
+      if (!session || !session.userId) {
+        return session;
+      }
+      return Users.get({ id: session.userId }).then(user => {
+        session.user = user;
+        return session;
       });
+    });
   }
 
   /**
