@@ -3,8 +3,8 @@ const path = require("path");
 const utils = require("./lib/hashUtils");
 const partials = require("express-partials");
 const bodyParser = require("body-parser");
-const Auth = require("./middleware/auth");
-const parseCookies = require("./middleware/cookieParser");
+const Auth = require("./middleware/auth"); // { createSession: {}}
+const parseCookies = require("./middleware/cookieParser"); // (req, res, next) => {}
 const models = require("./models");
 
 const app = express();
@@ -15,6 +15,7 @@ app.use(partials());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(parseCookies);
+app.use(Auth.createSession);
 app.use(express.static(path.join(__dirname, "../public")));
 
 app.get("/", (req, res) => {
@@ -99,43 +100,59 @@ app.get("/login", (req, res) => {
   res.render("login");
 });
 
-app.post("/login", (req, res) => {
-  // let { body } = req;
-  let bodyUsername = req.body.username;
-  let bodyPassword = req.body.password;
-  // body.password or user.password
-  return models.Users.get({ username: bodyUsername })
-    .then(result => {
-      if (!result) {
-        res.status(404).redirect("/login");
-        // throw new Error("users does not exists");
-        console.log("users does not exists");
-        return;
-      }
-      return result;
-    })
+app.post("/login", async ({ body }, res) => {
+  models.Users.get({ username: body.username })
     .then(user => {
-      let userPassword = user.password || "";
-      let salt = user.salt || "";
-      if (!user) {
-        // throw new Error("users does not exists");
-        console.log("users does not exists");
-        return;
+      if (user) {
+        if (models.Users.compare(body.password, user.password, user.salt)) {
+          return res.status(201).redirect("/");
+        }
       }
-      return models.Users.compare(bodyPassword, userPassword, salt);
-    })
-    .then(success => {
-      if (success) {
-        res.status(201).redirect("/");
-      }
-      res.status(404).redirect("/login");
+      throw "login error";
     })
     .catch(err => {
       console.log(err);
+      return res.status(404).redirect("/login");
     });
-
-  res.send("index");
 });
+
+// app.post("/login", (req, res) => {
+//   // let { body } = req;
+//   let bodyUsername = req.body.username;
+//   let bodyPassword = req.body.password;
+//   // body.password or user.password
+//   return models.Users.get({ username: bodyUsername })
+//     .then(result => {
+//       if (!result) {
+//         res.status(404).redirect("/login");
+//         // throw new Error("users does not exists");
+//         console.log("users does not exists");
+//         return;
+//       }
+//       return result;
+//     })
+//     .then(user => {
+//       let userPassword = user.password || "";
+//       let salt = user.salt || "";
+//       if (!user) {
+//         // throw new Error("users does not exists");
+//         console.log("users does not exists");
+//         return;
+//       }
+//       return models.Users.compare(bodyPassword, userPassword, salt);
+//     })
+//     .then(success => {
+//       if (success) {
+//         res.status(201).redirect("/");
+//       }
+//       res.status(404).redirect("/login");
+//     })
+//     .catch(err => {
+//       console.log(err);
+//     });
+
+//   res.send("index");
+// });
 
 /************************************************************/
 // Handle the code parameter route last - if all other routes fail
