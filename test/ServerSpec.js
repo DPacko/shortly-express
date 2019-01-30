@@ -422,7 +422,7 @@ describe("", function() {
     });
 
     describe("Session Parser", function() {
-      xit("initializes a new session when there are no cookies on the request", function(done) {
+      it("initializes a new session when there are no cookies on the request", function(done) {
         var requestWithoutCookies = httpMocks.createRequest();
         var response = httpMocks.createResponse();
 
@@ -435,7 +435,7 @@ describe("", function() {
         });
       });
 
-      xit("sets a new cookie on the response when a session is initialized", function(done) {
+      it("sets a new cookie on the response when a session is initialized", function(done) {
         var requestWithoutCookie = httpMocks.createRequest();
         var response = httpMocks.createResponse();
 
@@ -447,7 +447,7 @@ describe("", function() {
         });
       });
 
-      xit("assigns a session object to the request if a session already exists", function(done) {
+      it("assigns a session object to the request if a session already exists", function(done) {
         var requestWithoutCookie = httpMocks.createRequest();
         var response = httpMocks.createResponse();
 
@@ -467,7 +467,7 @@ describe("", function() {
         });
       });
 
-      xit("creates a new hash for each new session", function(done) {
+      it("creates a new hash for each new session", function(done) {
         var requestWithoutCookies = httpMocks.createRequest();
         var response = httpMocks.createResponse();
 
@@ -521,7 +521,7 @@ describe("", function() {
         });
       });
 
-      xit("clears and reassigns a new cookie if there is no session assigned to the cookie", function(done) {
+      it("clears and reassigns a new cookie if there is no session assigned to the cookie", function(done) {
         var maliciousCookieHash = "8a864482005bcc8b968f2b18f8f7ea490e577b20";
         var response = httpMocks.createResponse();
         var requestWithMaliciousCookie = httpMocks.createRequest();
@@ -537,7 +537,7 @@ describe("", function() {
     });
   });
 
-  xdescribe("Sessions and cookies", function() {
+  describe("Sessions and cookies", function() {
     var requestWithSession;
     var cookieJar;
 
@@ -646,7 +646,7 @@ describe("", function() {
     });
   });
 
-  xdescribe("Privileged Access:", function() {
+  describe("Privileged Access:", function() {
     it("Redirects to login page if a user tries to access the main page and is not signed in", function(done) {
       request("http://127.0.0.1:4568/", function(error, res, body) {
         if (error) {
@@ -678,7 +678,7 @@ describe("", function() {
     });
   });
 
-  xdescribe("Link creation:", function() {
+  describe("Link creation:", function() {
     var cookies = request.jar();
     var requestWithSession = request.defaults({ jar: cookies });
     var options = {
@@ -690,7 +690,7 @@ describe("", function() {
       }
     };
 
-    xbeforeEach(function(done) {
+    beforeEach(function(done) {
       var options = {
         method: "POST",
         followAllRedirects: true,
@@ -862,6 +862,87 @@ describe("", function() {
           expect(body).to.include('"code":"' + link.code + '"');
           done();
         });
+      });
+    });
+  });
+  describe("Extra Test:", function() {
+    beforeEach(function(done) {
+      var options = {
+        method: "POST",
+        uri: "http://127.0.0.1:4568/signup",
+        json: {
+          username: "Samantha",
+          password: "Samantha"
+        }
+      };
+
+      request(options, function(error, res, body) {
+        done(error);
+      });
+    });
+    it("signup creates a new user record", function(done) {
+      var options = {
+        method: "POST",
+        uri: "http://127.0.0.1:4568/signup",
+        json: {
+          username: "FrendFernandy",
+          password: "DawnIsTheCoolest!"
+        }
+      };
+
+      var options = {
+        method: "POST",
+        uri: "http://127.0.0.1:4568/signup",
+        json: {
+          username: "DawnSaq",
+          password: "FrendIsTheDopest!"
+        }
+      };
+
+      request(options, function(error, res, body) {
+        var queryString = 'SELECT * FROM users where username = "DawnSaq"';
+        db.query(queryString, function(err, rows) {
+          if (err) {
+            done(err);
+          }
+          var user = rows[0];
+          expect(user).to.exist;
+          expect(user.username).to.equal("DawnSaq");
+          expect(user.id).to.equal(2);
+          done();
+        });
+      });
+    });
+
+    it("no duplicate usernames", function(done) {
+      var newUser = {
+        username: "Frend",
+        password: "12345"
+      };
+      db.query("INSERT INTO users SET ?", newUser, function(err, results) {
+        var sameUser = newUser;
+        db.query("INSERT INTO users SET ?", sameUser, function(err) {
+          expect(err).to.exist;
+          done();
+        });
+      });
+    });
+    it("Users that enter an incorrect username are kept on login page", function(done) {
+      var options = {
+        method: "POST",
+        uri: "http://127.0.0.1:4568/login",
+        json: {
+          username: "ImYou",
+          password: "Samantha"
+        }
+      };
+
+      request(options, function(error, res, body) {
+        if (error) {
+          return done(error);
+        }
+        expect(res.headers.location).to.equal("/login");
+        done();
       });
     });
   });
